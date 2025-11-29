@@ -1,0 +1,27 @@
+version: '3'
+services:
+  # 1. The FastAPI Application
+  target-app:
+    build: ./app
+    container_name: target-app
+    ports:
+      - "8002:8000"
+
+  # 2. The Nginx Firewall/Gateway
+  gateway:
+    build: ./gateway
+    container_name: gateway
+    ports:
+      - "8082:80"  # We access the app via localhost:8082
+    depends_on:
+      - target-app
+    volumes:
+      # We mount logs locally so you can see them on your laptop
+      - ./logs:/var/log/nginx
+
+  # 3. The Traffic Generator
+  traffic-gen:
+    build: ./traffic_gen
+    container_name: traffic-gen
+    depends_on:
+      - gateway
