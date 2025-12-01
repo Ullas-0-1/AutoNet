@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: target-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: target-app
+  template:
+    metadata:
+      labels:
+        app: target-app
+    spec:
+      containers:
+      - name: target-app
+        image: bkimminich/juice-shop:latest  # <--- Official Image
+        ports:
+        - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: target-app
+spec:
+  selector:
+    app: target-app
+  ports:
+    - protocol: TCP
+      port: 3000        # The port other pods (Gateway) use to talk to this
+      targetPort: 3000  # The port the container is actually listening on
+  type: ClusterIP       # Internal Only. No external access.

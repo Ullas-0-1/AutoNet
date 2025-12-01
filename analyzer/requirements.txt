@@ -1,0 +1,5 @@
+ansible-core
+scikit-learn
+numpy
+pandas
+joblib

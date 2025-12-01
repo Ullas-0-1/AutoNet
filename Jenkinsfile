@@ -2,16 +2,19 @@ pipeline {
     agent any
 
     environment {
-        // 1. Credentials ID you already have in Jenkins
+        // Credentials ID stored in Jenkins
         DOCKER_CREDENTIALS_ID = 'dockerhub-creds' 
         
-        // 2. Your Docker Hub Details
+        // Your Docker Hub Username
         DOCKER_USER = 'ullas474'
-        APP_IMAGE = 'autonet-app'
+        
+        // Image Names
         GATEWAY_IMAGE = 'autonet-gateway'
         TRAFFIC_IMAGE = 'autonet-traffic-gen'
+        ANALYZER_IMAGE = 'autonet-analyzer'
+        HONEYPOT_IMAGE = 'autonet-honeypot'
 
-        // 3. FORCE PATH (Critical for Mac): Ensures Jenkins finds the 'docker' command
+        // Force Path for Mac Jenkins to find Docker
         PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${env.PATH}"
     }
 
@@ -19,16 +22,14 @@ pipeline {
         stage('Sanity Check') {
             steps {
                 script {
-                    // This verifies Jenkins can actually see Docker before trying to build
                     sh "docker --version"
-                    echo "Docker is available!"
+                    echo "Docker is ready!"
                 }
             }
         }
 
         stage('Checkout Code') {
             steps {
-                // Pulls the latest code from your GitHub Repo
                 checkout scm
             }
         }
@@ -36,11 +37,13 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-                    echo '--- Building Images ---'
-                    // We build all 3 services from their respective folders
-                    sh "docker build -t $DOCKER_USER/$APP_IMAGE:latest ./app"
+                    echo '--- Building Microservices ---'
+                    // We DO NOT build the Target App (Juice Shop) because we use the official image
+                    
                     sh "docker build -t $DOCKER_USER/$GATEWAY_IMAGE:latest ./gateway"
                     sh "docker build -t $DOCKER_USER/$TRAFFIC_IMAGE:latest ./traffic_gen"
+                    sh "docker build -t $DOCKER_USER/$ANALYZER_IMAGE:latest ./analyzer"
+                    sh "docker build -t $DOCKER_USER/$HONEYPOT_IMAGE:latest ./honeypot"
                 }
             }
         }
@@ -49,13 +52,13 @@ pipeline {
             steps {
                 script {
                     echo '--- Logging in & Pushing ---'
-                    // Securely login using your stored credentials
                     withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS_ID, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                         sh 'echo $PASS | docker login -u $USER --password-stdin'
                         
-                        sh "docker push $DOCKER_USER/$APP_IMAGE:latest"
                         sh "docker push $DOCKER_USER/$GATEWAY_IMAGE:latest"
                         sh "docker push $DOCKER_USER/$TRAFFIC_IMAGE:latest"
+                        sh "docker push $DOCKER_USER/$ANALYZER_IMAGE:latest"
+                        sh "docker push $DOCKER_USER/$HONEYPOT_IMAGE:latest"
                     }
                 }
             }
@@ -64,10 +67,11 @@ pipeline {
         stage('Cleanup') {
             steps {
                 script {
-                    echo '--- Removing Local Images to Save Space ---'
-                    sh "docker rmi $DOCKER_USER/$APP_IMAGE:latest"
+                    echo '--- Cleaning up ---'
                     sh "docker rmi $DOCKER_USER/$GATEWAY_IMAGE:latest"
                     sh "docker rmi $DOCKER_USER/$TRAFFIC_IMAGE:latest"
+                    sh "docker rmi $DOCKER_USER/$ANALYZER_IMAGE:latest"
+                    sh "docker rmi $DOCKER_USER/$HONEYPOT_IMAGE:latest"
                 }
             }
         }

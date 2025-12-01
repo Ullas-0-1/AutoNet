@@ -1,25 +1,70 @@
-version: '3'
+# services:
+#   # 1. The Vulnerable App (Official Image)
+#   target-app:
+#     image: bkimminich/juice-shop
+#     container_name: target-app
+#     ports:
+#       - "8002:3000"  # Access directly via localhost:8002
+
+#   # 2. The Nginx Firewall/Gateway
+#   gateway:
+#     build: ./gateway
+#     container_name: gateway
+#     ports:
+#       - "8082:80"    # Access via Firewall at localhost:8082
+#     depends_on:
+#       - target-app
+#     volumes:
+#       - ./logs:/var/log/nginx       # Shared Logs
+#       - ./logs:/etc/nginx/conf.d    # Shared Blocklist
+
+#   # 3. The Traffic Generator
+#   traffic-gen:
+#     build: ./traffic_gen
+#     container_name: traffic-gen
+#     depends_on:
+#       - gateway
+
+
+
+######without firewall -- above thing u run to show vulnerablity
+
+
 services:
-  # 1. The FastAPI Application
+  # 1. The Vulnerable App (Juice Shop)
   target-app:
-    build: ./app
+    image: bkimminich/juice-shop
     container_name: target-app
     ports:
-      - "8002:8000"
+      - "8002:3000"
 
-  # 2. The Nginx Firewall/Gateway
+  # 2. The Honeypot
+  honeypot:
+    build: ./honeypot
+    container_name: honeypot
+
+  # 3. The Firewall
   gateway:
     build: ./gateway
     container_name: gateway
     ports:
-      - "8082:80"  # We access the app via localhost:8082
+      - "8082:80"
     depends_on:
       - target-app
     volumes:
-      # We mount logs locally so you can see them on your laptop
-      - ./logs:/var/log/nginx
+      - ./logs:/var/log/nginx       # Shared Logs
+      - ./logs:/etc/nginx/conf.d    # Shared Blocklist
 
-  # 3. The Traffic Generator
+  # 4. The Brain (Analyzer + Ansible)
+  analyzer:
+    build: ./analyzer
+    container_name: analyzer
+    volumes:
+      - ./logs:/shared_data         # Shared Logs/Blocklist
+      # CRITICAL: Allows Analyzer to run 'docker exec' commands
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  # 5. The Attacker
   traffic-gen:
     build: ./traffic_gen
     container_name: traffic-gen
