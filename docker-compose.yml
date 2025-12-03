@@ -30,20 +30,73 @@
 ######without firewall -- above thing u run to show vulnerablity
 
 
+# services:
+#   # 1. The Vulnerable App (Juice Shop)
+#   target-app:
+#     image: bkimminich/juice-shop
+#     container_name: target-app
+#     ports:
+#       - "8002:3000"
+
+#   # 2. The Honeypot (Fake Admin)
+#   honeypot:
+#     build: ./honeypot
+#     container_name: honeypot
+
+#   # 3. The Firewall
+#   gateway:
+#     build: ./gateway
+#     container_name: gateway
+#     ports:
+#       - "8082:80"
+#     depends_on:
+#       - target-app
+#     volumes:
+#       # WRITE logs here so Analyzer can read them
+#       - ./logs:/var/log/nginx
+#       # READ blocklist from here (Ansible writes this)
+#       - ./logs:/etc/nginx/conf.d
+
+#   # 4. The Brain (Analyzer + Ansible)
+#   analyzer:
+#     build: ./analyzer
+#     container_name: analyzer
+#     volumes:
+#       # READ logs / WRITE blocklist
+#       - ./logs:/shared_data
+
+#   # 5. The Attacker
+#   traffic-gen:
+#     build: ./traffic_gen
+#     container_name: traffic-gen
+#     depends_on:
+#       - gateway
+
+
+
+
+
+
+
+
+############use this one for instant terminal outputs from all of it 
+
+
+
 services:
-  # 1. The Vulnerable App (Juice Shop)
   target-app:
     image: bkimminich/juice-shop
     container_name: target-app
     ports:
       - "8002:3000"
 
-  # 2. The Honeypot
   honeypot:
     build: ./honeypot
     container_name: honeypot
+    # FIX: Force logs to appear instantly
+    environment:
+      - PYTHONUNBUFFERED=1
 
-  # 3. The Firewall
   gateway:
     build: ./gateway
     container_name: gateway
@@ -52,21 +105,72 @@ services:
     depends_on:
       - target-app
     volumes:
-      - ./logs:/var/log/nginx       # Shared Logs
-      - ./logs:/etc/nginx/conf.d    # Shared Blocklist
+      - ./logs:/var/log/nginx
+      - ./logs:/etc/nginx/conf.d
 
-  # 4. The Brain (Analyzer + Ansible)
   analyzer:
     build: ./analyzer
     container_name: analyzer
     volumes:
-      - ./logs:/shared_data         # Shared Logs/Blocklist
-      # CRITICAL: Allows Analyzer to run 'docker exec' commands
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ./logs:/shared_data
+    # FIX: Force logs to appear instantly
+    environment:
+      - PYTHONUNBUFFERED=1
 
-  # 5. The Attacker
   traffic-gen:
     build: ./traffic_gen
     container_name: traffic-gen
     depends_on:
       - gateway
+    # FIX: Force logs to appear instantly
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  
+
+
+  
+  # # --- ELK STACK START ---
+  # elasticsearch:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:7.17.9
+  #   container_name: elasticsearch
+  #   environment:
+  #     - discovery.type=single-node
+  #     - "ES_JAVA_OPTS=-Xms512m -Xmx512m" # Limit memory usage
+  #   ports:
+  #     - "9200:9200"
+
+  # kibana:
+  #   image: docker.elastic.co/kibana/kibana:7.17.9
+  #   container_name: kibana
+  #   ports:
+  #     - "5601:5601"
+  #   depends_on:
+  #     - elasticsearch
+
+  # logstash:
+  #   image: docker.elastic.co/logstash/logstash:7.17.9
+  #   container_name: logstash
+  #   volumes:
+  #     - ./elk/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+  #   ports:
+  #     - "5044:5044"
+  #   depends_on:
+  #     - elasticsearch
+  #   # NEW: Tell Docker how to check if Logstash is ready
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:9600/_node/pipelines/main"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 10
+
+  # filebeat:
+  #   image: docker.elastic.co/beats/filebeat:7.17.9
+  #   container_name: filebeat
+  #   user: root
+  #   volumes:
+  #     - ./elk/filebeat.yml:/usr/share/filebeat/filebeat.yml
+  #     - ./logs:/var/log/nginx
+  #   depends_on:
+  #     logstash:
+  #       condition: service_healthy  # <--- WAIT until healthcheck passes

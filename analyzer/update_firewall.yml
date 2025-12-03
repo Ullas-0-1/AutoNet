@@ -17,9 +17,4 @@
         owner: root
         mode: '0666'
 
-    # RELOAD NGINX INSTANTLY
-    # We use docker exec to talk to the 'gateway' container from the 'analyzer' container
-    # This works because we mounted the docker socket
-    - name: Reload Nginx Container
-      command: docker exec gateway nginx -s reload
-      ignore_errors: yes
+    
