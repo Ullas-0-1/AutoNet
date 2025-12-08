@@ -2,19 +2,15 @@ pipeline {
     agent any
 
     environment {
-        // Credentials ID stored in Jenkins
         DOCKER_CREDENTIALS_ID = 'dockerhub-creds' 
-        
-        // Your Docker Hub Username
         DOCKER_USER = 'ullas474'
         
-        // Image Names
         GATEWAY_IMAGE = 'autonet-gateway'
         TRAFFIC_IMAGE = 'autonet-traffic-gen'
         ANALYZER_IMAGE = 'autonet-analyzer'
         HONEYPOT_IMAGE = 'autonet-honeypot'
+        DLP_IMAGE = 'autonet-dlp'  // NEW IMAGE
 
-        // Force Path for Mac Jenkins to find Docker
         PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${env.PATH}"
     }
 
@@ -38,12 +34,11 @@ pipeline {
             steps {
                 script {
                     echo '--- Building Microservices ---'
-                    // We DO NOT build the Target App (Juice Shop) because we use the official image
-                    
                     sh "docker build -t $DOCKER_USER/$GATEWAY_IMAGE:latest ./gateway"
                     sh "docker build -t $DOCKER_USER/$TRAFFIC_IMAGE:latest ./traffic_gen"
                     sh "docker build -t $DOCKER_USER/$ANALYZER_IMAGE:latest ./analyzer"
-                    sh "docker build -t $DOCKER_USER/$HONEYPOT_IMAGE:latest ./honeypot"
+                    // NEW BUILD STEP
+                    sh "docker build -t $DOCKER_USER/$DLP_IMAGE:latest ./dlp"
                 }
             }
         }
@@ -58,7 +53,8 @@ pipeline {
                         sh "docker push $DOCKER_USER/$GATEWAY_IMAGE:latest"
                         sh "docker push $DOCKER_USER/$TRAFFIC_IMAGE:latest"
                         sh "docker push $DOCKER_USER/$ANALYZER_IMAGE:latest"
-                        sh "docker push $DOCKER_USER/$HONEYPOT_IMAGE:latest"
+                        // NEW PUSH STEP
+                        sh "docker push $DOCKER_USER/$DLP_IMAGE:latest"
                     }
                 }
             }
@@ -71,7 +67,7 @@ pipeline {
                     sh "docker rmi $DOCKER_USER/$GATEWAY_IMAGE:latest"
                     sh "docker rmi $DOCKER_USER/$TRAFFIC_IMAGE:latest"
                     sh "docker rmi $DOCKER_USER/$ANALYZER_IMAGE:latest"
-                    sh "docker rmi $DOCKER_USER/$HONEYPOT_IMAGE:latest"
+                    sh "docker rmi $DOCKER_USER/$DLP_IMAGE:latest"
                 }
             }
         }

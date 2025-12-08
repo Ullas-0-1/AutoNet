@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: autonet-pv
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 100Mi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    # CRITICAL: Update this path to your actual AutoNet/logs folder path on Mac
+    # Example: /Users/ullas/Desktop/SPE/AutoNet/logs
+    path: "/Users/ullas/Desktop/SPE/AutoNet/logs" 
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shared-logs-pvc
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Mi

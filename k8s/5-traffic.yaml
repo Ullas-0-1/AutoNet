@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: traffic-gen
 spec:
-  replicas: 1  # We will scale this up later to simulate DDoS!
+  replicas: 1
   selector:
     matchLabels:
       app: traffic-gen
@@ -15,7 +15,6 @@ spec:
       containers:
       - name: traffic-gen
         image: ullas474/autonet-traffic-gen:latest
-        imagePullPolicy: Always
         env:
-          - name: PYTHONUNBUFFERED
-            value: "1"
+        - name: PYTHONUNBUFFERED
+          value: "1"

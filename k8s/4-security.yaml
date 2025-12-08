@@ -1,0 +1,85 @@
+# --- GATEWAY (Nginx) ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+      - name: gateway
+        image: ullas474/autonet-gateway:latest
+        ports:
+        - containerPort: 80
+        # --- REQUIRED FOR HPA SCALING ---
+        resources:
+          requests:
+            cpu: "100m"
+          limits:
+            cpu: "500m"
+        # -------------------------------
+        volumeMounts:
+        - name: shared-logs
+          mountPath: /var/log/nginx
+        - name: shared-logs
+          mountPath: /etc/nginx/conf.d
+        - name: nginx-conf
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+      volumes:
+      - name: shared-logs
+        persistentVolumeClaim:
+          claimName: shared-logs-pvc
+      - name: nginx-conf
+        configMap:
+          name: nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+spec:
+  selector:
+    app: gateway
+  ports:
+    - protocol: TCP
+      port: 8082
+      targetPort: 80
+  type: LoadBalancer
+
+---
+# --- ANALYZER (Brain) ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analyzer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analyzer
+  template:
+    metadata:
+      labels:
+        app: analyzer
+    spec:
+      containers:
+      - name: analyzer
+        image: ullas474/autonet-analyzer:latest
+        env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        volumeMounts:
+        - name: shared-logs
+          mountPath: /shared_data
+      volumes:
+      - name: shared-logs
+        persistentVolumeClaim:
+          claimName: shared-logs-pvc

@@ -20,8 +20,7 @@ THREAT_FEED = {"192.168.100.100"}
 SIGNATURES = [
     r"('|\"|%27|%22)\s*(OR|UNION|SELECT|INSERT|DROP)", 
     r"(<script>|%3Cscript%3E|alert\()",               
-    r"(\.\./|\.\.%2f)",                               
-    r"/honeypot"                                      
+    r"(\.\./|\.\.%2f)",                                                                  
 ]
 
 # --- HELPERS ---

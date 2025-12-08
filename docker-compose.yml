@@ -90,10 +90,14 @@ services:
     ports:
       - "8002:3000"
 
-  honeypot:
-    build: ./honeypot
-    container_name: honeypot
-    # FIX: Force logs to appear instantly
+  # --- NEW SERVICE ---
+  dlp:
+    build: ./dlp
+    container_name: dlp
+    ports:
+      - "5050:5000"
+    depends_on:
+      - target-app
     environment:
       - PYTHONUNBUFFERED=1
 
@@ -103,7 +107,7 @@ services:
     ports:
       - "8082:80"
     depends_on:
-      - target-app
+      - dlp                 # Now depends on DLP, not just App
     volumes:
       - ./logs:/var/log/nginx
       - ./logs:/etc/nginx/conf.d
@@ -113,7 +117,6 @@ services:
     container_name: analyzer
     volumes:
       - ./logs:/shared_data
-    # FIX: Force logs to appear instantly
     environment:
       - PYTHONUNBUFFERED=1
 
@@ -122,13 +125,8 @@ services:
     container_name: traffic-gen
     depends_on:
       - gateway
-    # FIX: Force logs to appear instantly
     environment:
       - PYTHONUNBUFFERED=1
-
-  
-
-
   
   # # --- ELK STACK START ---
   # elasticsearch:

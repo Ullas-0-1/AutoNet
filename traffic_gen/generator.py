@@ -167,14 +167,12 @@ def get_attack_request():
     payloads = [
         "/rest/products/search?q=' OR 1=1 --",
         "/api/Feedbacks?comment=<script>alert(1)</script>",
-        "/honeypot" # <--- THIS TRIGGERS THE HONEYPOT CONTAINER
     ]
     
     path = random.choice(payloads)
     
     if "OR" in path: return path, "SQLi"
     if "script" in path: return path, "XSS"
-    if "honeypot" in path: return path, "PROBE"
     return path, "ATTACK"
 
 def run():
