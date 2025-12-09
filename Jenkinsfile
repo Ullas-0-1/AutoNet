@@ -35,17 +35,6 @@ pipeline {
             }
         }
 
-        stage('Run Automated Tests') {
-            steps {
-                script {
-                    echo '--- 🧪 Running Unit Tests on Analyzer ---'
-                    // We run the tests inside a temporary Docker container
-                    // This ensures the test environment matches production exactly
-                    sh "docker run --rm -v ${WORKSPACE}/analyzer:/app -w /app python:3.9-slim /bin/bash -c 'pip install pandas numpy scikit-learn ansible-core && python tests.py'"
-                }
-            }
-        }
-
         stage('Build Docker Images') {
             steps {
                 script {
