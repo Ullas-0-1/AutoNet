@@ -42,6 +42,7 @@
         - k8s/4-security.yaml
         - k8s/5-traffic.yaml
         - k8s/6-hpa.yaml
+        - k8s/7-logging.yaml
 
   # --- SECURITY PHASE 3: GUARANTEED CLEANUP ---
   always:
