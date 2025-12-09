@@ -69,17 +69,16 @@ pipeline {
                 script {
                     echo '--- 🚀 Deploying via Ansible (With Vault & Roles) ---'
                     
-                    // SECURITY UPGRADE:
-                    // 1. Fetch the 'ansible-vault-pass' secret text from Jenkins
-                    // 2. Fetch the 'k8s-config' secret file for connection
-                    withCredentials([
-                        string(credentialsId: 'ansible-vault-pass', variable: 'VAULT_PASS'),
-                        file(credentialsId: 'k8s-config', variable: 'KUBECONFIG')
-                    ]) {
+                    // SECURITY FIX:
+                    // We ONLY need the Vault Password. The Kubeconfig is inside the encrypted Git files.
+                    // Jenkins retrieves 'ansible-vault-pass' from credentials and saves it to .vault_pass
+                    
+                    withCredentials([string(credentialsId: 'ansible-vault-pass', variable: 'VAULT_PASS')]) {
                         // Create the password file dynamically
                         sh 'echo "$VAULT_PASS" > .vault_pass'
                         
                         // Run Ansible using the dynamic file
+                        // Note: Kubeconfig comes from group_vars (decrypted by Ansible), not Jenkins env
                         sh "ansible-playbook deploy.yml --vault-password-file .vault_pass"
                         
                         // Clean up immediately
