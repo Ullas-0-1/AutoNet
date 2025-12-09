@@ -1,0 +1,18 @@
+---
+- name: Deploy AutoNet Infrastructure
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  # 1. Manually load the encrypted variables file
+  # (Since it's inside 'ansible/group_vars' and not './group_vars')
+  vars_files:
+    - ansible/group_vars/all.yml
+
+  vars:
+    # Still grab the kubeconfig path from Jenkins env if needed as a fallback
+    kubeconfig_path: "{{ lookup('env', 'KUBECONFIG') }}"
+
+  roles:
+    # 2. Point directly to the role folder
+    - role: ./ansible/roles/k8s_deploy

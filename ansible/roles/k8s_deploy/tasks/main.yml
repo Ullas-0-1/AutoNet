@@ -1,0 +1,51 @@
+---
+- name: Ensure Python Kubernetes Client is installed
+  pip:
+    name: kubernetes
+    state: present
+
+# --- SECURITY PHASE 1: DECRYPT ---
+- name: Decrypt Kubeconfig from Vault
+  copy:
+    content: "{{ kubeconfig_content }}"
+    dest: "./temp_kube_config"
+    mode: '0600'
+
+# --- SECURITY PHASE 2: SAFE EXECUTION BLOCK ---
+# We wrap the logic in a 'block'. If anything fails inside here,
+# Ansible will still jump to the 'always' section to clean up.
+- block:
+    - name: Check Cluster Health (Pre-flight)
+      command: kubectl get nodes --kubeconfig ./temp_kube_config
+      register: k8s_health
+      failed_when: k8s_health.rc != 0
+      changed_when: false
+
+    - name: Create Namespace
+      kubernetes.core.k8s:
+        name: default
+        api_version: v1
+        kind: Namespace
+        state: present
+        kubeconfig: "./temp_kube_config"
+
+    - name: Deploy Kubernetes Manifests (Modular Loop)
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ item }}"
+        kubeconfig: "./temp_kube_config"
+        namespace: default 
+      loop:
+        - k8s/1-storage.yaml
+        - k8s/2-configmap.yaml
+        - k8s/3-apps.yaml
+        - k8s/4-security.yaml
+        - k8s/5-traffic.yaml
+        - k8s/6-hpa.yaml
+
+  # --- SECURITY PHASE 3: GUARANTEED CLEANUP ---
+  always:
+    - name: Remove Temporary Kubeconfig (Always Run)
+      file:
+        path: "./temp_kube_config"
+        state: absent

@@ -16,5 +16,6 @@ spec:
       - name: traffic-gen
         image: ullas474/autonet-traffic-gen:latest
         env:
+        # FIX: Force logs to show immediately
         - name: PYTHONUNBUFFERED
           value: "1"

@@ -48,11 +48,19 @@ metadata:
 spec:
   selector:
     app: gateway
+  type: LoadBalancer
   ports:
-    - protocol: TCP
+    # 1. Internal Port (For Traffic Gen & Analyzer to connect)
+    - name: internal-http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+    
+    # 2. External Port (For YOU to connect via localhost:8082)
+    - name: external-access
+      protocol: TCP
       port: 8082
       targetPort: 80
-  type: LoadBalancer
 
 ---
 # --- ANALYZER (Brain) ---

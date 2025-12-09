@@ -2,15 +2,20 @@ pipeline {
     agent any
 
     environment {
+        // Credentials ID stored in Jenkins
         DOCKER_CREDENTIALS_ID = 'dockerhub-creds' 
+        
+        // Your Docker Hub Username
         DOCKER_USER = 'ullas474'
         
+        // Image Names
         GATEWAY_IMAGE = 'autonet-gateway'
         TRAFFIC_IMAGE = 'autonet-traffic-gen'
         ANALYZER_IMAGE = 'autonet-analyzer'
-        HONEYPOT_IMAGE = 'autonet-honeypot'
-        DLP_IMAGE = 'autonet-dlp'  // NEW IMAGE
+        // HONEYPOT_IMAGE removed as per previous steps
+        DLP_IMAGE = 'autonet-dlp'
 
+        // Force Path for Mac Jenkins to find Docker
         PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${env.PATH}"
     }
 
@@ -37,7 +42,7 @@ pipeline {
                     sh "docker build -t $DOCKER_USER/$GATEWAY_IMAGE:latest ./gateway"
                     sh "docker build -t $DOCKER_USER/$TRAFFIC_IMAGE:latest ./traffic_gen"
                     sh "docker build -t $DOCKER_USER/$ANALYZER_IMAGE:latest ./analyzer"
-                    // NEW BUILD STEP
+                    // DLP Build
                     sh "docker build -t $DOCKER_USER/$DLP_IMAGE:latest ./dlp"
                 }
             }
@@ -53,8 +58,32 @@ pipeline {
                         sh "docker push $DOCKER_USER/$GATEWAY_IMAGE:latest"
                         sh "docker push $DOCKER_USER/$TRAFFIC_IMAGE:latest"
                         sh "docker push $DOCKER_USER/$ANALYZER_IMAGE:latest"
-                        // NEW PUSH STEP
                         sh "docker push $DOCKER_USER/$DLP_IMAGE:latest"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to K8s via Ansible') {
+            steps {
+                script {
+                    echo '--- 🚀 Deploying via Ansible (With Vault & Roles) ---'
+                    
+                    // SECURITY UPGRADE:
+                    // 1. Fetch the 'ansible-vault-pass' secret text from Jenkins
+                    // 2. Fetch the 'k8s-config' secret file for connection
+                    withCredentials([
+                        string(credentialsId: 'ansible-vault-pass', variable: 'VAULT_PASS'),
+                        file(credentialsId: 'k8s-config', variable: 'KUBECONFIG')
+                    ]) {
+                        // Create the password file dynamically
+                        sh 'echo "$VAULT_PASS" > .vault_pass'
+                        
+                        // Run Ansible using the dynamic file
+                        sh "ansible-playbook deploy.yml --vault-password-file .vault_pass"
+                        
+                        // Clean up immediately
+                        sh "rm .vault_pass"
                     }
                 }
             }
@@ -64,10 +93,11 @@ pipeline {
             steps {
                 script {
                     echo '--- Cleaning up ---'
-                    sh "docker rmi $DOCKER_USER/$GATEWAY_IMAGE:latest"
-                    sh "docker rmi $DOCKER_USER/$TRAFFIC_IMAGE:latest"
-                    sh "docker rmi $DOCKER_USER/$ANALYZER_IMAGE:latest"
-                    sh "docker rmi $DOCKER_USER/$DLP_IMAGE:latest"
+                    // The || true ensures the pipeline doesn't fail if images are already gone
+                    sh "docker rmi $DOCKER_USER/$GATEWAY_IMAGE:latest || true"
+                    sh "docker rmi $DOCKER_USER/$TRAFFIC_IMAGE:latest || true"
+                    sh "docker rmi $DOCKER_USER/$ANALYZER_IMAGE:latest || true"
+                    sh "docker rmi $DOCKER_USER/$DLP_IMAGE:latest || true"
                 }
             }
         }
