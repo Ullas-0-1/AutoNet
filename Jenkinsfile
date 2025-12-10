@@ -35,6 +35,16 @@ pipeline {
             }
         }
 
+        stage('Run Automated Tests') {
+            steps {
+                script {
+                    echo '--- 🧪 Running Unit Tests on Analyzer ---'
+                    // Runs inside a temporary python container. No need to install python on Jenkins machine.
+                    sh "docker run --rm -v ${WORKSPACE}/analyzer:/app -w /app python:3.9-slim /bin/bash -c 'pip install pandas numpy scikit-learn ansible-core && python tests.py'"
+                }
+            }
+        }
+
         stage('Build Docker Images') {
             steps {
                 script {
