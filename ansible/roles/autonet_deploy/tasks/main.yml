@@ -1,0 +1,23 @@
+---
+- name: Create Namespace
+  kubernetes.core.k8s:
+    name: default
+    api_version: v1
+    kind: Namespace
+    state: present
+    kubeconfig: "{{ temp_config_path }}"
+
+- name: Deploy Kubernetes Manifests
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ item }}"
+    kubeconfig: "{{ temp_config_path }}"
+    namespace: default
+  loop:
+    - k8s/1-storage.yaml
+    - k8s/2-configmap.yaml
+    - k8s/3-apps.yaml
+    - k8s/4-security.yaml
+    - k8s/5-traffic.yaml
+    - k8s/6-hpa.yaml
+    - k8s/7-logging.yaml

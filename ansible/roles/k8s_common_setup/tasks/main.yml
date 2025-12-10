@@ -1,0 +1,17 @@
+---
+- name: Ensure Python Kubernetes Client is installed
+  pip:
+    name: kubernetes
+    state: present
+
+- name: Decrypt Kubeconfig from Vault
+  copy:
+    content: "{{ kubeconfig_content }}"
+    dest: "{{ temp_config_path }}"
+    mode: '0600'
+
+- name: Check Cluster Health (Pre-flight)
+  command: kubectl get nodes --kubeconfig "{{ temp_config_path }}"
+  register: k8s_health
+  failed_when: k8s_health.rc != 0
+  changed_when: false

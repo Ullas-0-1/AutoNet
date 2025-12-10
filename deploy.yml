@@ -4,15 +4,28 @@
   connection: local
   gather_facts: false
   
-  # 1. Manually load the encrypted variables file
-  # (Since it's inside 'ansible/group_vars' and not './group_vars')
   vars_files:
     - ansible/group_vars/all.yml
-
+    
   vars:
-    # Still grab the kubeconfig path from Jenkins env if needed as a fallback
-    kubeconfig_path: "{{ lookup('env', 'KUBECONFIG') }}"
+    # Shared variable for both roles
+    temp_config_path: "./temp_kube_config"
 
-  roles:
-    # 2. Point directly to the role folder
-    - role: ./ansible/roles/k8s_deploy
+  tasks:
+    - block:
+        # Step 1: Prepare Environment (Decrypt & Check)
+        - name: Run Common Setup
+          import_role:
+            name: ./ansible/roles/k8s_common_setup
+        
+        # Step 2: Deploy Application
+        - name: Run AutoNet Deployment
+          import_role:
+            name: ./ansible/roles/autonet_deploy
+
+      # Step 3: Cleanup (Runs even if Step 1 or 2 fails)
+      always:
+        - name: Remove Temporary Kubeconfig
+          file:
+            path: "{{ temp_config_path }}"
+            state: absent
