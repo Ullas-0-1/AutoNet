@@ -152,7 +152,7 @@ TARGET_URL = "http://gateway:80"
 
 # ... (Keep IP lists and User Agents from previous version) ...
 NORMAL_IPS = [f"192.168.1.{x}" for x in range(5, 20)]
-ATTACKER_IPS = ["203.55.11.22", "66.77.88.99", "185.20.30.40","111.222.33.44"]
+ATTACKER_IPS = ["203.55.11.22", "66.77.88.99", "185.20.30.40"]
 
 USER_AGENTS = ["Mozilla/5.0", "Chrome/91.0", "Safari/537.36"] # Simplified for brevity
 
