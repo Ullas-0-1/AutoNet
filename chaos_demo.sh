@@ -6,7 +6,7 @@ kubectl get pods -l app=target-app
 
 echo ""
 echo "🔥 KILLING the Juice Shop Application..."
-# Delete the specific pod. Kubernetes Deployment will notice and restart it.
+# Delete the specific pod. Kubernetes Deployment will notice and restart it,.
 kubectl delete pod -l app=target-app
 
 echo ""
